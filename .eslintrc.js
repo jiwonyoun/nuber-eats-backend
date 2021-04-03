@@ -7,7 +7,11 @@ module.exports = {
   plugins: ['@typescript-eslint/eslint-plugin'],
   extends: [
     'plugin:@typescript-eslint/recommended',
+    // eslint-plugin-prettier + eslint-config-prettier 동시 적용
+    
     'prettier/@typescript-eslint',
+    // prettier 규칙과 충돌하는 @typescript-eslint/eslint-plugin 규칙 비활성화
+    
     'plugin:prettier/recommended',
   ],
   root: true,
