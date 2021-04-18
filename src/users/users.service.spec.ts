@@ -11,16 +11,17 @@ const mockRepository = () => ({
   findOne: jest.fn(),
   save: jest.fn(),
   create: jest.fn(),
+  findOneOrFail: jest.fn(),
 });
 
-const mockJwtService = {
-  sign: jest.fn(),
+const mockJwtService = () => ({
+  sign: jest.fn(() => 'signed-token'),
   verify: jest.fn(),
-};
+});
 
-const mockMailService = {
+const mockMailService = () => ({
   sendVerificationEmail: jest.fn(),
-};
+});
 
 type MockRepository<T = any> = Partial<
   Record<keyof Repository<User>, jest.Mock>
@@ -31,8 +32,9 @@ describe('UserService', () => {
   let usersRepository: MockRepository<User>;
   let verificationsRepository: MockRepository<Verification>;
   let mailService: MailService;
+  let jwtService: JwtService;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     const module = await Test.createTestingModule({
       providers: [
         UserService,
@@ -58,6 +60,7 @@ describe('UserService', () => {
     usersRepository = module.get(getRepositoryToken(User));
     verificationsRepository = module.get(getRepositoryToken(Verification));
     mailService = module.get<MailService>(MailService);
+    jwtService = module.get<JwtService>(JwtService);
   });
 
   it('should be defined', () => {
@@ -70,6 +73,7 @@ describe('UserService', () => {
       password: 'test1234',
       role: 0,
     };
+
     it('should fail if user exists', async () => {
       usersRepository.findOne.mockResolvedValue({
         id: 1,
@@ -115,9 +119,128 @@ describe('UserService', () => {
         ok: true,
       });
     });
+
+    it('should fail on exception', async () => {
+      usersRepository.findOne.mockRejectedValue(new Error(''));
+      const result = await service.createAccount(createAccountArgs);
+      expect(result).toEqual({
+        ok: false,
+        error: "Couldn't create account.",
+      });
+    });
+
+    describe('login', () => {
+      const loginArgs = {
+        email: 'error@error.com',
+        password: 'errpassword',
+      };
+
+      it('should fail if user does not exists', async () => {
+        usersRepository.findOne.mockResolvedValue(null);
+        const result = await service.login(loginArgs);
+        expect(usersRepository.findOne).toHaveBeenCalledTimes(1);
+        expect(usersRepository.findOne).toHaveBeenCalledWith(
+          expect.any(Object),
+          expect.any(Object),
+        );
+        expect(result).toEqual({ ok: false, error: 'User not found.' });
+      });
+
+      it('should fail if the password is wrong', async () => {
+        const mockedUser = {
+          checkPassword: jest.fn(() => Promise.resolve(false)),
+          // checkPassword의 값을 false로 mocking
+        };
+        usersRepository.findOne.mockResolvedValue(mockedUser);
+        const result = await service.login(loginArgs);
+        expect(result).toEqual({ ok: false, error: 'Wrong password.' });
+      });
+
+      it('should return token if password correct', async () => {
+        const mockedUser = {
+          id: 1,
+          checkPassword: jest.fn(() => Promise.resolve(true)),
+        };
+        usersRepository.findOne.mockResolvedValue(mockedUser);
+        const result = await service.login(loginArgs);
+        expect(jwtService.sign).toHaveBeenCalledTimes(1);
+        expect(jwtService.sign).toHaveBeenCalledWith(expect.any(Number));
+        expect(result).toEqual({ ok: true, token: 'signed-token' });
+      });
+
+      describe('findById', () => {
+        const findByIdArgs = {
+          id: 1,
+        };
+
+        it('should find an existing user', async () => {
+          usersRepository.findOneOrFail.mockResolvedValue(findByIdArgs);
+          const result = await service.findById(1);
+          expect(result).toEqual({
+            ok: true,
+            user: findByIdArgs,
+          });
+        });
+
+        it('should fail if no user is found', async () => {
+          usersRepository.findOneOrFail.mockRejectedValue(new Error());
+          const result = await service.findById(1);
+          expect(result).toEqual({
+            ok: false,
+            error: 'User Not Found',
+          });
+        });
+      });
+
+      describe('editProfile', () => {
+        it('should change email', async () => {
+          const oldUser = {
+            email: 'old@test.com',
+            verified: true,
+          };
+
+          const editProfileArgs = {
+            userId: 1,
+            input: { email: 'new@test.com' },
+          };
+
+          const newVerification = {
+            code: 'code',
+          };
+
+          const newUser = {
+            verified: false,
+            email: editProfileArgs.input.email,
+          };
+
+          usersRepository.findOne.mockResolvedValue(oldUser);
+          verificationsRepository.create.mockReturnValue(newVerification); // 일반 함수 return
+          verificationsRepository.save.mockResolvedValue(newVerification); // Promise resolve return
+          await service.editProfile(
+            editProfileArgs.userId,
+            editProfileArgs.input,
+          );
+
+          expect(usersRepository.findOne).toHaveBeenCalledTimes(1);
+          expect(usersRepository.findOne).toHaveBeenCalledWith(
+            editProfileArgs.userId,
+          );
+
+          expect(verificationsRepository.create).toHaveBeenCalledWith({
+            user: newUser,
+          });
+          expect(verificationsRepository.save).toHaveBeenCalledWith(
+            newVerification,
+          );
+
+          expect(mailService.sendVerificationEmail).toHaveBeenCalledWith(
+            newUser.email,
+            newVerification.code,
+          );
+        });
+      });
+
+      it.todo('verifyEmail');
+    });
   });
-  it.todo('login');
-  it.todo('findById');
-  it.todo('editProfile');
-  it.todo('verifyEmail');
 });
