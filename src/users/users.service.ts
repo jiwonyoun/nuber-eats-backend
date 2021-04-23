@@ -94,7 +94,7 @@ export class UserService {
       const user = await this.users.findOneOrFail(id);
       return {
         ok: true,
-        user: user,
+        user,
       };
     } catch (error) {
       return {

@@ -25,7 +25,6 @@ export class RestaurantService {
     try {
       const newRestaurant = this.restaurants.create(createRestaurantInput);
       newRestaurant.owner = owner;
-      console.log(owner);
       const categoryName = createRestaurantInput.categoryName
         .trim()
         .toLowerCase();
@@ -41,7 +40,7 @@ export class RestaurantService {
       return {
         ok: true,
       };
-    } catch (e) {
+    } catch {
       return {
         ok: false,
         error: 'Could not create restaurant.',

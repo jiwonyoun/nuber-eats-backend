@@ -1,6 +1,8 @@
+import { SetMetadata } from '@nestjs/common';
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { AuthUser } from 'src/auth/auth-user.decorator';
-import { User } from 'src/users/entities/user.entity';
+import { Role } from 'src/auth/role.decorator';
+import { User, UserRole } from 'src/users/entities/user.entity';
 import {
   CreateRestaurantInput,
   CreateRestaurantOutput,
@@ -12,11 +14,14 @@ import { RestaurantService } from './restaurants.service';
 export class RestaurantResolver {
   constructor(private readonly restaurantService: RestaurantService) {}
 
+  @Role(['Owner'])
   @Mutation(() => CreateRestaurantOutput)
   async createRestaurant(
     @AuthUser() authUser: User,
-    @Args('input') createRestaurantInput: CreateRestaurantInput,
+    @Args('input')
+    createRestaurantInput: CreateRestaurantInput,
   ): Promise<CreateRestaurantOutput> {
+    console.log(authUser);
     return this.restaurantService.createRestaurant(
       authUser,
       createRestaurantInput,
