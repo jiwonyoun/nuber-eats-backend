@@ -2,10 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/users/entities/user.entity';
 import { Repository } from 'typeorm';
+import { AllCategoriesOutput } from './dtos/all-categories.dto';
+import { CategoryInput, CategoryOutput } from './dtos/category.dto';
 import {
   CreateRestaurantInput,
   CreateRestaurantOutput,
 } from './dtos/create-restaurant.dto';
+import { DeleteRestaurantInput } from './dtos/delete-restaurant.dto';
 import {
   EditRestaurantInput,
   EditRestaurantOutput,
@@ -90,6 +93,98 @@ export class RestaurantService {
       return {
         ok: false,
         error: 'Could not update restaurant',
+      };
+    }
+  }
+
+  async deleteRestaurant(owner: User, { restaurantId }: DeleteRestaurantInput) {
+    try {
+      const restaurant = await this.restaurants.findOne(restaurantId, {
+        loadRelationIds: true,
+      });
+      if (!restaurant) {
+        return {
+          ok: false,
+          error: 'Restaurant not found',
+        };
+      }
+
+      if (owner.id !== restaurant.ownerId) {
+        return {
+          ok: false,
+          error: "You can't edit a restaurant that you don't own",
+        };
+      }
+      await this.restaurants.delete(restaurantId);
+      return {
+        ok: true,
+      };
+    } catch (e) {
+      return {
+        ok: false,
+        error: 'Could not delete restaurant',
+      };
+    }
+  }
+
+  async allCategories(): Promise<AllCategoriesOutput> {
+    try {
+      const categories = await this.categories.find({
+        relations: ['restaurants'],
+      });
+      if (!categories) {
+        return {
+          ok: false,
+          error: 'Categories are empty',
+        };
+      }
+      return {
+        ok: true,
+        categories: categories,
+      };
+    } catch (e) {
+      return {
+        ok: false,
+        error: 'Could not load categories',
+      };
+    }
+  }
+
+  async countRestaurant(category: Category): Promise<number> {
+    return await this.restaurants.count({ category });
+  }
+
+  async findCategoryBySlug({
+    slug,
+    page,
+  }: CategoryInput): Promise<CategoryOutput> {
+    try {
+      const category = await this.categories.findOne(
+        { slug },
+        { relations: ['restaurants'] },
+      );
+      if (!category) {
+        return {
+          ok: false,
+          error: 'Category not found',
+        };
+      }
+      const restaurants = await this.restaurants.find({
+        where: { category },
+        take: 25,
+        skip: (page - 1) * 25,
+      });
+      category.restaurants = restaurants;
+      const totalResults = await this.countRestaurant(category);
+      return {
+        ok: true,
+        category,
+        totalPages: Math.ceil(totalResults / 25),
+      };
+    } catch (e) {
+      return {
+        ok: false,
+        error: 'Could not load categorey',
       };
     }
   }

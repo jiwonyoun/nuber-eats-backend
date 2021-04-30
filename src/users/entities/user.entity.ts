@@ -49,7 +49,7 @@ export class User extends CoreEntity {
   })
   restaurants: Restaurant[];
 
-  // Repository에 save 되기 전에 실행되는 method
+  // Repository에 save 되기 전에 실행
   @BeforeInsert()
   @BeforeUpdate()
   async hashPassword(): Promise<void> {
