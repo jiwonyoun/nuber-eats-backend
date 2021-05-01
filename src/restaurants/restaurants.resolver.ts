@@ -25,6 +25,7 @@ import {
   EditRestaurantInput,
   EditRestaurantOutput,
 } from './dtos/edit-restaurant.dto';
+import { RestaurantsInput, RestuarantsOutput } from './dtos/restaurants.dto';
 import { Category } from './entities/category.entity';
 import { Restaurant } from './entities/restaurant.entity';
 import { RestaurantService } from './restaurants.service';
@@ -35,7 +36,7 @@ export class RestaurantResolver {
 
   @Role(['Owner'])
   @Mutation(() => CreateRestaurantOutput)
-  async createRestaurant(
+  createRestaurant(
     @AuthUser() authUser: User,
     @Args('input')
     createRestaurantInput: CreateRestaurantInput,
@@ -48,7 +49,7 @@ export class RestaurantResolver {
 
   @Mutation(() => EditRestaurantOutput)
   @Role(['Owner'])
-  async editRestaurant(
+  editRestaurant(
     @AuthUser() owner: User,
     @Args('input') editRestaurantInput: EditRestaurantInput,
   ): Promise<EditRestaurantOutput> {
@@ -57,14 +58,21 @@ export class RestaurantResolver {
 
   @Mutation(() => DeleteRestaurantOutput)
   @Role(['Owner'])
-  async deleteRestaurant(
+  deleteRestaurant(
     @AuthUser() owner: User,
     @Args('input') deleteRestaurantInput: DeleteRestaurantInput,
   ): Promise<DeleteRestaurantOutput> {
-    return await this.restaurantService.deleteRestaurant(
+    return this.restaurantService.deleteRestaurant(
       owner,
       deleteRestaurantInput,
     );
+  }
+
+  @Query(() => RestuarantsOutput)
+  restaurants(
+    @Args('input') restaurantsInput: RestaurantsInput,
+  ): Promise<RestuarantsOutput> {
+    return this.restaurantService.allRestaurants(restaurantsInput);
   }
 }
 

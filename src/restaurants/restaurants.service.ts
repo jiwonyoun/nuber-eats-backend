@@ -8,11 +8,15 @@ import {
   CreateRestaurantInput,
   CreateRestaurantOutput,
 } from './dtos/create-restaurant.dto';
-import { DeleteRestaurantInput } from './dtos/delete-restaurant.dto';
+import {
+  DeleteRestaurantInput,
+  DeleteRestaurantOutput,
+} from './dtos/delete-restaurant.dto';
 import {
   EditRestaurantInput,
   EditRestaurantOutput,
 } from './dtos/edit-restaurant.dto';
+import { RestaurantsInput, RestuarantsOutput } from './dtos/restaurants.dto';
 import { Category } from './entities/category.entity';
 import { Restaurant } from './entities/restaurant.entity';
 import { CategoryRepository } from './repositories/category.repository';
@@ -97,7 +101,10 @@ export class RestaurantService {
     }
   }
 
-  async deleteRestaurant(owner: User, { restaurantId }: DeleteRestaurantInput) {
+  async deleteRestaurant(
+    owner: User,
+    { restaurantId }: DeleteRestaurantInput,
+  ): Promise<DeleteRestaurantOutput> {
     try {
       const restaurant = await this.restaurants.findOne(restaurantId, {
         loadRelationIds: true,
@@ -127,6 +134,36 @@ export class RestaurantService {
     }
   }
 
+  async allRestaurants({ page }: RestaurantsInput): Promise<RestuarantsOutput> {
+    try {
+      const [results, totalResults] = await this.restaurants.findAndCount({
+        // relations: ['category'],
+        take: 25,
+        skip: (page - 1) * 10,
+      });
+
+      if (!results) {
+        return {
+          ok: false,
+          error: 'Restaurants not found',
+        };
+      }
+
+      return {
+        ok: true,
+        results,
+        totalResults,
+        totalPages: Math.ceil(totalResults / 25),
+      };
+    } catch {
+      return {
+        ok: false,
+        error: 'Could not load restaurants',
+      };
+    }
+  }
+
+  // Category Services
   async allCategories(): Promise<AllCategoriesOutput> {
     try {
       const categories = await this.categories.find({
@@ -174,11 +211,11 @@ export class RestaurantService {
         take: 25,
         skip: (page - 1) * 25,
       });
-      category.restaurants = restaurants;
       const totalResults = await this.countRestaurant(category);
       return {
         ok: true,
         category,
+        restaurants,
         totalPages: Math.ceil(totalResults / 25),
       };
     } catch (e) {
