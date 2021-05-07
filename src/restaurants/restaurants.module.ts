@@ -12,7 +12,7 @@ import {
 import { RestaurantService } from './restaurants.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Restaurant, CategoryRepository])],
+  imports: [TypeOrmModule.forFeature([Restaurant, CategoryRepository, Dish])],
   providers: [
     RestaurantResolver,
     RestaurantService,
@@ -20,4 +20,4 @@ import { RestaurantService } from './restaurants.service';
     DishResolver,
   ],
 })
-export class RestaurantsModule {}
+export class RestaurantsModule { }

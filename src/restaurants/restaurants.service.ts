@@ -24,6 +24,7 @@ import {
   SearchRestaurantOutput,
 } from './dtos/search-restaurant.dto';
 import { Category } from './entities/category.entity';
+import { Dish } from './entities/dish.entity';
 import { Restaurant } from './entities/restaurant.entity';
 import { CategoryRepository } from './repositories/category.repository';
 
@@ -32,9 +33,11 @@ export class RestaurantService {
   constructor(
     @InjectRepository(Restaurant)
     private readonly restaurants: Repository<Restaurant>,
+    @InjectRepository(Dish)
+    private readonly dishes: Repository<Dish>,
     @InjectRepository(Category)
     private readonly categories: CategoryRepository,
-  ) {}
+  ) { }
 
   async createRestaurant(
     owner: User,
@@ -242,7 +245,7 @@ export class RestaurantService {
       }
       return {
         ok: true,
-        categories: categories,
+        categories,
       };
     } catch (e) {
       return {
@@ -297,6 +300,26 @@ export class RestaurantService {
     createDishInput: CreateDishInput,
   ): Promise<CreateDishOutput> {
     try {
+      const restaurant = await this.restaurants.findOne(createDishInput.restaurantId);
+      if (!restaurant) {
+        return {
+          ok: false,
+          error: 'Restaurant not found',
+        }
+      }
+
+      if (owner.id !== restaurant.ownerId) {
+        return {
+          ok: false,
+          error: 'You don\'t have permission.',
+        }
+      }
+
+      const dish = await this.dishes.save(await this.dishes.create({ ...createDishInput, restaurant }));
+      console.log(dish);
+      return {
+        ok: true,
+      }
     } catch {
       return {
         ok: false,
