@@ -20,4 +20,4 @@ import { RestaurantService } from './restaurants.service';
     DishResolver,
   ],
 })
-export class RestaurantsModule { }
+export class RestaurantsModule {}

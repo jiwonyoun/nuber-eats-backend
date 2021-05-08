@@ -9,10 +9,12 @@ import {
   CreateRestaurantInput,
   CreateRestaurantOutput,
 } from './dtos/create-restaurant.dto';
+import { DeleteDishInput, DeleteDishOutput } from './dtos/delete-dish.dto';
 import {
   DeleteRestaurantInput,
   DeleteRestaurantOutput,
 } from './dtos/delete-restaurant.dto';
+import { EditDishInput, EditDishOutput } from './dtos/edit-dish.dto';
 import {
   EditRestaurantInput,
   EditRestaurantOutput,
@@ -37,7 +39,7 @@ export class RestaurantService {
     private readonly dishes: Repository<Dish>,
     @InjectRepository(Category)
     private readonly categories: CategoryRepository,
-  ) { }
+  ) {}
 
   async createRestaurant(
     owner: User,
@@ -300,29 +302,105 @@ export class RestaurantService {
     createDishInput: CreateDishInput,
   ): Promise<CreateDishOutput> {
     try {
-      const restaurant = await this.restaurants.findOne(createDishInput.restaurantId);
+      const restaurant = await this.restaurants.findOne(
+        createDishInput.restaurantId,
+      );
       if (!restaurant) {
         return {
           ok: false,
           error: 'Restaurant not found',
-        }
+        };
       }
 
       if (owner.id !== restaurant.ownerId) {
         return {
           ok: false,
-          error: 'You don\'t have permission.',
-        }
+          error: "You don't have permission.",
+        };
       }
 
-      const dish = await this.dishes.save(await this.dishes.create({ ...createDishInput, restaurant }));
+      const dish = await this.dishes.save(
+        await this.dishes.create({ ...createDishInput, restaurant }),
+      );
       console.log(dish);
       return {
         ok: true,
-      }
+      };
     } catch {
       return {
         ok: false,
+      };
+    }
+  }
+
+  async deleteDish(
+    owner: User,
+    { dishId }: DeleteDishInput,
+  ): Promise<DeleteDishOutput> {
+    try {
+      const dish = await this.dishes.findOne(dishId, {
+        relations: ['restaurant'],
+      });
+      if (!dish) {
+        return {
+          ok: false,
+          error: 'Dish not found',
+        };
+      }
+
+      if (owner.id !== dish.restaurant.ownerId) {
+        return {
+          ok: false,
+          error: "You don't have permission",
+        };
+      }
+      await this.dishes.remove(dish);
+      return {
+        ok: true,
+      };
+    } catch {
+      return {
+        ok: false,
+        error: 'Could not delete dish',
+      };
+    }
+  }
+
+  async editDish(
+    owner: User,
+    editDishInput: EditDishInput,
+  ): Promise<EditDishOutput> {
+    try {
+      const dish = await this.dishes.findOne(editDishInput.dishId, {
+        relations: ['restaurant'],
+      });
+      if (!dish) {
+        return {
+          ok: false,
+          error: 'Dish not found',
+        };
+      }
+
+      if (owner.id !== dish.restaurant.ownerId) {
+        return {
+          ok: false,
+          error: "You don't have permisson",
+        };
+      }
+
+      await this.dishes.save([
+        {
+          id: editDishInput.dishId,
+          ...editDishInput,
+        },
+      ]);
+      return {
+        ok: true,
+      };
+    } catch {
+      return {
+        ok: false,
+        error: 'Could not edit dish',
       };
     }
   }
