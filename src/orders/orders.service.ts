@@ -32,6 +32,9 @@ export class OrderService {
         };
       }
 
+      let orderFinalPrice = 0;
+      const orderItems: OrderItem[] = [];
+
       for (const item of items) {
         const dish = await this.dishes.findOne(item.dishId);
         if (!dish) {
@@ -40,39 +43,51 @@ export class OrderService {
             error: 'Dish not found',
           };
         }
-        console.log(`Dish price : ${dish.price}$`);
+        let dishFinalPrice = dish.price;
 
         for (const itemOption of item.options) {
-          // console.log(dish.options);
           const dishOption = dish.options.find(
             (dishOption) => dishOption.name === itemOption.name,
           );
           if (dishOption) {
             if (dishOption.extra) {
-              console.log(`$USD + ${dishOption.extra}`);
+              dishFinalPrice += dishOption.extra;
+              console.log(`price: + ${dishFinalPrice}`);
             } else {
               const dishOptionChoice = dishOption.choices.find(
                 (optionChoice) => optionChoice.name === itemOption.choice,
               );
               if (dishOptionChoice) {
                 if (dishOptionChoice.extra) {
-                  console.log(`$USD + ${dishOptionChoice.extra}`);
+                  console.log(`price: + ${dishFinalPrice}`);
+                  dishFinalPrice += dishOptionChoice.extra;
                 }
               }
             }
           }
         }
-        // await this.orderItems.save(
-        //   this.orderItems.create({ dish, options: item.options }),
-        // );
+        orderFinalPrice += dishFinalPrice;
+        console.log(orderFinalPrice);
+
+        const orderItem = await this.orderItems.save(
+          this.orderItems.create({ dish, options: item.options }),
+        );
+
+        orderItems.push(orderItem);
       }
 
-      // const order = await this.orders.save(
-      //   this.orders.create({
-      //     customer,
-      //     restaurant,
-      //   }),
-      // );
+      const order = await this.orders.save(
+        this.orders.create({
+          customer,
+          restaurant,
+          total: orderFinalPrice,
+          items: orderItems,
+        }),
+      );
+
+      return {
+        ok: true,
+      };
     } catch (e) {
       console.log(e);
       return {
