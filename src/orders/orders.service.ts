@@ -108,12 +108,10 @@ export class OrderService {
       if (user.role === UserRole.Client) {
         orders = await this.orders.find({
           where: { customer: user, ...(status && { status }) },
-          relations: ['items'],
         });
       } else if (user.role === UserRole.Delivery) {
         orders = await this.orders.find({
           where: { driver: user, ...(status && { status }) },
-          relations: ['items'],
         });
       } else if (user.role === UserRole.Owner) {
         // Owner가 restaurant을 여러개 가질 수 있음
@@ -144,11 +142,35 @@ export class OrderService {
 
   async getOrder(user: User, { id }: GetOrderInput): Promise<GetOrderOutput> {
     try {
-      const order = await this.orders.findOne({ id }, { relations: ['items'] });
+      const order = await this.orders.findOne(
+        { id },
+        { relations: ['restaurant'] },
+      );
       if (!order) {
         return {
           ok: false,
           error: 'Order not found',
+        };
+      }
+
+      let canSee = true;
+      if (user.role === UserRole.Client && order.customerId !== user.id) {
+        canSee = false;
+      }
+      if (user.role === UserRole.Delivery && order.driverId !== user.id) {
+        canSee = false;
+      }
+      if (
+        user.role === UserRole.Owner &&
+        order.restaurant.ownerId !== user.id
+      ) {
+        canSee = false;
+      }
+
+      if (!canSee) {
+        return {
+          ok: false,
+          error: "You don't have permission.",
         };
       }
 
