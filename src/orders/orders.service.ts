@@ -107,12 +107,12 @@ export class OrderService {
       let orders = [];
       if (user.role === UserRole.Client) {
         orders = await this.orders.find({
-          where: { customer: user },
+          where: { customer: user, ...(status && { status }) },
           relations: ['items'],
         });
       } else if (user.role === UserRole.Delivery) {
         orders = await this.orders.find({
-          where: { driver: user },
+          where: { driver: user, ...(status && { status }) },
           relations: ['items'],
         });
       } else if (user.role === UserRole.Owner) {
@@ -124,6 +124,9 @@ export class OrderService {
 
         console.log(restaurants);
         orders = restaurants.map((restaurant) => restaurant.orders).flat(1);
+        if (status) {
+          orders = orders.filter((order) => order.status === status);
+        }
       }
 
       return {
