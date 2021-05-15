@@ -52,8 +52,15 @@ export class OrderResolver {
     return this.ordersService.editOrder(user, editOrderInput);
   }
 
+  @Mutation(() => Boolean)
+  exampleReady() {
+    pubsub.publish('example', { readyExample: 'Your example is ready.' });
+    return true;
+  }
+
   @Subscription(() => String)
-  hotPotatos() {
-    return pubsub.asyncIterator('hotPotatos');
+  @Role(['Any'])
+  readyExample(@AuthUser() user: User) {
+    return pubsub.asyncIterator('example');
   }
 }
