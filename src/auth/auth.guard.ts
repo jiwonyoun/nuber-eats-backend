@@ -35,7 +35,7 @@ export class AuthGuard implements CanActivate {
         }
         return roles.includes(user.role);
       } else {
-        // token has problem
+        // when token has a problem
         return false;
       }
     } else {
