@@ -56,15 +56,21 @@ export class OrderResolver {
   }
 
   @Mutation(() => Boolean)
-  exampleReady() {
-    this.pubSub.publish('example', { readyExample: 'Your example is ready.' });
+  exampleReady(@Args('exId') exId: number) {
+    this.pubSub.publish(
+      'example',
+      { readyExample: exId }, // payload
+    );
     return true;
   }
 
-  @Subscription(() => String)
+  @Subscription(() => String, {
+    filter: ({ readyExample }, { exId }) => {
+      return readyExample === exId;
+    },
+  })
   @Role(['Any'])
-  readyExample(@AuthUser() user: User) {
-    console.log(user);
+  readyExample(@Args('exId') exId: number) {
     return this.pubSub.asyncIterator('example');
   }
 }
