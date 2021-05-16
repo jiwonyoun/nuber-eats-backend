@@ -68,6 +68,8 @@ export class OrderResolver {
     filter: ({ readyExample }, { exId }) => {
       return readyExample === exId;
     },
+    resolve: ({ readyExample }) =>
+      `Your example with the id ${readyExample} is ready.`,
   })
   @Role(['Any'])
   readyExample(@Args('exId') exId: number) {
