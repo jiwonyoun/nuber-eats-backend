@@ -1,7 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PubSub } from 'graphql-subscriptions';
-import { NEW_PENDING_ORDER, PUB_SUB } from 'src/common/common.constants';
+import {
+  NEW_COOKED_ORDER,
+  NEW_PENDING_ORDER,
+  PUB_SUB,
+} from 'src/common/common.constants';
 import { Dish } from 'src/restaurants/entities/dish.entity';
 import { Restaurant } from 'src/restaurants/entities/restaurant.entity';
 import { User, UserRole } from 'src/users/entities/user.entity';
@@ -210,7 +214,7 @@ export class OrderService {
       if (!this.canSeeOrder(user, order)) {
         return {
           ok: false,
-          error: "You don't have permission.",
+          error: "Can't see this.",
         };
       }
 
@@ -239,7 +243,8 @@ export class OrderService {
         };
       }
 
-      await this.orders.save({ ...order, status });
+      const newOrder: Order = await this.orders.save({ ...order, status });
+      await this.pubSub.publish(NEW_COOKED_ORDER, { cookedOrders: newOrder });
       return {
         ok: true,
       };
