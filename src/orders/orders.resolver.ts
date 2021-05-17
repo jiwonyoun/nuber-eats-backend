@@ -3,7 +3,7 @@ import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
 import { PubSub } from 'graphql-subscriptions';
 import { AuthUser } from 'src/auth/auth-user.decorator';
 import { Role } from 'src/auth/role.decorator';
-import { PUB_SUB } from 'src/common/common.constants';
+import { NEW_PENDING_ORDER, PUB_SUB } from 'src/common/common.constants';
 import { User } from 'src/users/entities/user.entity';
 import { CreateOrderInput, CreateOrderOutput } from './dtos/create-order.dto';
 import { EditOrderInput, EditOrderOutput } from './dtos/edit-order.dto';
@@ -55,24 +55,18 @@ export class OrderResolver {
     return this.ordersService.editOrder(user, editOrderInput);
   }
 
-  @Mutation(() => Boolean)
-  exampleReady(@Args('exId') exId: number) {
-    this.pubSub.publish(
-      'example',
-      { readyExample: exId }, // payload
-    );
-    return true;
-  }
-
-  @Subscription(() => String, {
-    filter: ({ readyExample }, { exId }) => {
-      return readyExample === exId;
+  @Subscription(() => Order, {
+    filter: ({ pendingOrders: { ownerId } }, _, { user }) => {
+      console.log(ownerId);
+      console.log(user.id);
+      return ownerId === user.id;
     },
-    resolve: ({ readyExample }) =>
-      `Your example with the id ${readyExample} is ready.`,
+    resolve: ({ pendingOrders: { order } }) => {
+      return order;
+    },
   })
-  @Role(['Any'])
-  readyExample(@Args('exId') exId: number) {
-    return this.pubSub.asyncIterator('example');
+  @Role(['Owner'])
+  pendingOrders() {
+    return this.pubSub.asyncIterator(NEW_PENDING_ORDER);
   }
 }
