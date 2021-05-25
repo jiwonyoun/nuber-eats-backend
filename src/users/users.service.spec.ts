@@ -4,7 +4,7 @@ import { exception } from 'node:console';
 import { JwtService } from 'src/jwt/jwt.service';
 import { MailService } from 'src/mail/mail.service';
 import { Repository } from 'typeorm';
-import { User } from './entities/user.entity';
+import { User, UserRole } from './entities/user.entity';
 import { Verification } from './entities/verification.entity';
 import { UserService } from './users.service';
 
@@ -73,7 +73,7 @@ describe('UserService', () => {
     const createAccountArgs = {
       email: 'test@test.com',
       password: 'test1234',
-      role: 0,
+      role: UserRole.Client,
     };
 
     it('should fail if user exists', async () => {

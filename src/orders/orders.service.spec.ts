@@ -1,9 +1,13 @@
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { PubSub } from 'graphql-subscriptions';
+import { PUB_SUB } from 'src/common/common.constants';
+import { Category } from 'src/restaurants/entities/category.entity';
 import { Dish } from 'src/restaurants/entities/dish.entity';
 import { Restaurant } from 'src/restaurants/entities/restaurant.entity';
+import { User, UserRole } from 'src/users/entities/user.entity';
 import { Repository } from 'typeorm';
+import { CreateOrderInput } from './dtos/create-order.dto';
 import { OrderItem } from './entities/order-item.entity';
 import { Order } from './entities/order.entity';
 import { OrderService } from './orders.service';
@@ -52,7 +56,7 @@ describe('OrderService', () => {
           useValue: mockRepository,
         },
         {
-          provide: PubSub,
+          provide: PUB_SUB,
           useValue: mockPubSub(),
         },
       ],
@@ -62,6 +66,33 @@ describe('OrderService', () => {
     orderItemsRepository = module.get(getRepositoryToken(OrderItem));
     restaurantsRepository = module.get(getRepositoryToken(Restaurant));
     dishesRepository = module.get(getRepositoryToken(Dish));
-    pubSub = module.get<PubSub>(PubSub);
+    pubSub = module.get(PUB_SUB);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  describe('createOrder', () => {
+    const createOrderArgs = {
+      restaurantId: 1,
+      items: [
+        {
+          dishId: 1,
+          options: [
+            {
+              name: 'optionName',
+              extra: 10,
+            },
+          ],
+        },
+      ],
+    };
+
+    it('should fail if restaurant not exists', async () => {
+      restaurantsRepository.findOne.mockResolvedValue(undefined);
+
+      const result = await service.createOrder(new User(), createOrderArgs);
+    });
   });
 });
