@@ -3,7 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { PubSub } from 'graphql-subscriptions';
 import { PUB_SUB } from 'src/common/common.constants';
 import { Category } from 'src/restaurants/entities/category.entity';
-import { Dish } from 'src/restaurants/entities/dish.entity';
+import { Dish, DishOption } from 'src/restaurants/entities/dish.entity';
 import { Restaurant } from 'src/restaurants/entities/restaurant.entity';
 import { User, UserRole } from 'src/users/entities/user.entity';
 import { Repository } from 'typeorm';
@@ -87,20 +87,6 @@ describe('OrderService', () => {
       ],
     };
 
-    // const mockRestaurant: Restaurant = {
-    //   id: 1,
-    //   createdAt: new Date(),
-    //   updatedAt: new Date(),
-    //   name: '1',
-    //   coverImage: '1',
-    //   address: '1',
-    //   category: new Category(),
-    //   menu: [new Dish()],
-    //   owner: new User(),
-    //   ownerId: 1,
-    //   orders: [new Dish()],
-    // };
-
     it('should fail if restaurant not exists', async () => {
       restaurantsRepository.findOne.mockResolvedValue(undefined);
 
@@ -120,6 +106,17 @@ describe('OrderService', () => {
         ok: false,
         error: 'Dish not found',
       });
+    });
+
+    it('should create a new order', async () => {
+      restaurantsRepository.findOne.mockResolvedValue(new Restaurant());
+      dishesRepository.findOne.mockResolvedValue(new Dish());
+      orderItemsRepository.create.mockReturnValue(new OrderItem());
+      orderItemsRepository.save.mockResolvedValue(new OrderItem());
+      ordersRepository.create.mockReturnValue(createOrderArgs);
+      ordersRepository.save.mockResolvedValue(createOrderArgs);
+
+      const result = await service.createOrder(new User(), createOrderArgs);
     });
   });
 });
