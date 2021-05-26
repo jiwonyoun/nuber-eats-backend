@@ -23,9 +23,7 @@ const mockPubSub = () => ({
   publish: jest.fn(),
 });
 
-type MockRepository<T = any> = Partial<
-  Record<keyof Repository<Order>, jest.Mock>
->;
+type MockRepository<T = any> = Partial<Record<keyof Repository<T>, jest.Mock>>;
 
 describe('OrderService', () => {
   let service: OrderService;
@@ -41,19 +39,19 @@ describe('OrderService', () => {
         OrderService,
         {
           provide: getRepositoryToken(Order),
-          useValue: mockRepository,
+          useValue: mockRepository(),
         },
         {
           provide: getRepositoryToken(OrderItem),
-          useValue: mockRepository,
+          useValue: mockRepository(),
         },
         {
           provide: getRepositoryToken(Restaurant),
-          useValue: mockRepository,
+          useValue: mockRepository(),
         },
         {
           provide: getRepositoryToken(Dish),
-          useValue: mockRepository,
+          useValue: mockRepository(),
         },
         {
           provide: PUB_SUB,
@@ -89,10 +87,39 @@ describe('OrderService', () => {
       ],
     };
 
+    // const mockRestaurant: Restaurant = {
+    //   id: 1,
+    //   createdAt: new Date(),
+    //   updatedAt: new Date(),
+    //   name: '1',
+    //   coverImage: '1',
+    //   address: '1',
+    //   category: new Category(),
+    //   menu: [new Dish()],
+    //   owner: new User(),
+    //   ownerId: 1,
+    //   orders: [new Dish()],
+    // };
+
     it('should fail if restaurant not exists', async () => {
       restaurantsRepository.findOne.mockResolvedValue(undefined);
 
       const result = await service.createOrder(new User(), createOrderArgs);
+      expect(result).toMatchObject({
+        ok: false,
+        error: 'Restaurant not found',
+      });
+    });
+
+    it('should fail if dish not exists', async () => {
+      restaurantsRepository.findOne.mockResolvedValue(new Restaurant());
+      dishesRepository.findOne.mockResolvedValue(undefined);
+
+      const result = await service.createOrder(new User(), createOrderArgs);
+      expect(result).toMatchObject({
+        ok: false,
+        error: 'Dish not found',
+      });
     });
   });
 });

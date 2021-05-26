@@ -25,9 +25,7 @@ const mockMailService = () => ({
   sendVerificationEmail: jest.fn(),
 });
 
-type MockRepository<T = any> = Partial<
-  Record<keyof Repository<User>, jest.Mock>
->;
+type MockRepository<T = any> = Partial<Record<keyof Repository<T>, jest.Mock>>;
 
 describe('UserService', () => {
   let service: UserService;
