@@ -2,13 +2,17 @@ import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { PubSub } from 'graphql-subscriptions';
 import { PUB_SUB } from 'src/common/common.constants';
+import { CoreEntity } from 'src/common/entities/core.entity';
 import { Category } from 'src/restaurants/entities/category.entity';
 import { Dish, DishOption } from 'src/restaurants/entities/dish.entity';
 import { Restaurant } from 'src/restaurants/entities/restaurant.entity';
 import { User, UserRole } from 'src/users/entities/user.entity';
 import { Repository } from 'typeorm';
-import { CreateOrderInput } from './dtos/create-order.dto';
-import { OrderItem } from './entities/order-item.entity';
+import {
+  CreateOrderInput,
+  CreateOrderItemInput,
+} from './dtos/create-order.dto';
+import { OrderItem, OrderItemOption } from './entities/order-item.entity';
 import { Order } from './entities/order.entity';
 import { OrderService } from './orders.service';
 
@@ -71,8 +75,14 @@ describe('OrderService', () => {
     expect(service).toBeDefined();
   });
 
+  const mockCoreEntity: CoreEntity = {
+    id: 1,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
   describe('createOrder', () => {
-    const createOrderArgs = {
+    const createOrderArgs: CreateOrderInput = {
       restaurantId: 1,
       items: [
         {
@@ -80,7 +90,6 @@ describe('OrderService', () => {
           options: [
             {
               name: 'optionName',
-              extra: 10,
             },
           ],
         },
@@ -110,13 +119,20 @@ describe('OrderService', () => {
 
     it('should create a new order', async () => {
       restaurantsRepository.findOne.mockResolvedValue(new Restaurant());
-      dishesRepository.findOne.mockResolvedValue(new Dish());
+      dishesRepository.findOne.mockResolvedValue({
+        options: {
+          find: jest.fn(),
+        },
+      });
+
       orderItemsRepository.create.mockReturnValue(new OrderItem());
       orderItemsRepository.save.mockResolvedValue(new OrderItem());
       ordersRepository.create.mockReturnValue(createOrderArgs);
       ordersRepository.save.mockResolvedValue(createOrderArgs);
 
       const result = await service.createOrder(new User(), createOrderArgs);
+      expect(orderItemsRepository.create).toHaveBeenCalledTimes(1);
+      expect(orderItemsRepository.create).toBeInstanceOf(OrderItem);
     });
   });
 });

@@ -5,7 +5,7 @@ import { OrderItemOption } from '../entities/order-item.entity';
 import { Order } from '../entities/order.entity';
 
 @InputType()
-class CreateOrderItemInput {
+export class CreateOrderItemInput {
   @Field(() => Int)
   dishId: number;
 

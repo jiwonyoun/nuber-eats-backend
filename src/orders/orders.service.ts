@@ -49,6 +49,7 @@ export class OrderService {
 
       for (const item of items) {
         const dish = await this.dishes.findOne(item.dishId);
+
         if (!dish) {
           return {
             ok: false,
